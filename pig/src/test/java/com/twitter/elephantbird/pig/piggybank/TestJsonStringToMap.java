@@ -51,6 +51,15 @@ public class TestJsonStringToMap {
   }
 
   @Test
+  public final void testNestedJsonArray() throws IOException, ExecException {
+    Tuple input = tupleFactory_.newTuple(Arrays
+        .asList("[{\"name\": [\"value\",\"value2\"], \"nestedJson\": {\"json\": \"ihazit\"}}]"));
+    Map<String, String> result = udf_.exec(input);
+    assertTrue("Nested Json should just return as a String",
+        result.get("nestedJson") instanceof String);
+  }
+  
+  @Test
   public final void testInThePig() throws IOException {
     File tempFile = File.createTempFile("test", ".txt");
     String tempFilename = tempFile.getAbsolutePath();
@@ -76,6 +85,46 @@ public class TestJsonStringToMap {
       assertEquals(2, t.size());
       Map<?, ?> actual = (Map<?, ?>) t.get(1);
       assertNotNull(actual);
+      Map<String, String> expected = ImmutableMap.<String, String> of("name", "bob", "number", "2");
+      assertEquals(expected.size(), actual.size());
+      for (Map.Entry<String, String> e : expected.entrySet()) {
+        assertEquals(e.getValue(), actual.get(e.getKey()));
+      }
+    } finally {
+      pig.shutdown();
+    }
+  }
+  
+  
+  @Test
+  public final void testInThePigMyFile() throws IOException {
+    File tempFile = File.createTempFile("test", ".txt");
+    String tempFilename = "/Users/aksbhatia/Documents/PayPal/Projects/incentives-disha/json_input.txt";
+    //PrintWriter pw = new PrintWriter(tempFile);
+    //pw.println("1\t{\"name\": \"bob\", \"number\": 2}");
+    //pw.close();
+    PigServer pig = PigTestUtil.makePigServer();
+    try {
+      pig.registerQuery(String.format("DEFINE DeepNestedJsonStringToMap %s();",
+          DeepNestedJsonStringToMap.class.getName()));
+      pig.registerQuery(String
+          .format("x = LOAD '%s' AS (id: int, value: chararray);", tempFilename));
+      pig.registerQuery(String.format("x = FOREACH x GENERATE id, DeepNestedJsonStringToMap(value);",
+          tempFilename));
+      Schema schema = pig.dumpSchema("x");
+      assertNotNull(schema);
+      assertEquals("{id: int,json: map[chararray]}", schema.toString());
+      Iterator<Tuple> x = pig.openIterator("x");
+      assertNotNull(x);
+      assertTrue(x.hasNext());
+      Tuple t = x.next();
+      assertNotNull(t);
+      assertEquals(2, t.size());
+      Map<?, ?> actual = (Map<?, ?>) t.get(1);
+      assertNotNull(actual);
+      System.out.println("****OUTPUT: " + actual.get("appliedDiscounts"));
+      //pig.registerQuery(String.format("x = FOREACH x GENERATE id, DeepNestedJsonStringToMap(value);",
+       //       tempFilename));
       Map<String, String> expected = ImmutableMap.<String, String> of("name", "bob", "number", "2");
       assertEquals(expected.size(), actual.size());
       for (Map.Entry<String, String> e : expected.entrySet()) {
