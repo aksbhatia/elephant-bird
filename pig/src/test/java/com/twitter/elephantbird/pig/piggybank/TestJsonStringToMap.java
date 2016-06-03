@@ -99,7 +99,7 @@ public class TestJsonStringToMap {
   @Test
   public final void testInThePigMyFile() throws IOException {
     File tempFile = File.createTempFile("test", ".txt");
-    String tempFilename = "/Users/aksbhatia/Documents/PayPal/Projects/incentives-disha/json_input.txt";
+    String tempFilename = "./json_input.txt";
     //PrintWriter pw = new PrintWriter(tempFile);
     //pw.println("1\t{\"name\": \"bob\", \"number\": 2}");
     //pw.close();
